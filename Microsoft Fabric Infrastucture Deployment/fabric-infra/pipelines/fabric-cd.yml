@@ -1,0 +1,231 @@
+trigger: none
+# branches:
+#   include:
+#     - main
+
+resources:
+  pipelines:
+    - pipeline: build pipeline 
+      source: 'build pipeline'    
+      # trigger:
+      #   branches:
+      #     include:
+      #       - development   
+      #       - main
+        # Uncomment the below code, This will trigger the CD pipeline whenever the CI pipeline is successful
+
+# Include common variables from an external YAML file
+variables:
+  - template: azure-common-vars.yml
+ 
+stages:
+  # Stage 1: Terraform Plan (Development Stage)
+  - stage: Terraform_Plan_Development
+    displayName: 'Terraform Plan - Development'
+    jobs:
+      - job: Plan_Terraform_Dev
+        displayName: 'Terraform Plan - Development'
+        pool:
+          vmImage: 'ubuntu-latest'
+          group: #devops variable group
+
+        steps:
+          # Step 1: Download the Terraform Configuration Files artifact from the CI pipeline
+          - download: earp-reporting-and-analytics-fabric-infra-build
+            artifact: fabric-artifacts  
+            displayName: 'Download Terraform Configuration Files'
+
+
+          # Step 2: Install Terraform
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: $(terraformVersion)
+
+          # Step 3: Initialize Terraform Backend
+          - task: TerraformTaskV4@4  
+            displayName: 'Initialize Terraform Backend'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/fabric-infra/modules'
+              backendServiceArm: $(backendServiceConnection)
+              environmentServiceNameAzureRM: $(environmentServiceNameAzureRM)
+              backendAzureRmStorageAccountName: $(backendAzureRmStorageAccountName)
+              backendAzureRmContainerName: $(backendAzureRmContainerName)
+              backendAzureRmResourceGroupName: $(backendAzureRmResourceGroupName)
+              backendAzureRmKey: $(backendAzureRmKey)
+              group: #devops variable group
+              
+          # Step 4: Run Terraform Plan
+          - task: TerraformTaskV4@4
+            displayName: 'Run Terraform Plan'
+            inputs:
+              provider: 'azurerm'
+              command: 'plan'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/fabric-infra/modules'
+              environmentServiceNameAzureRM: $(environmentServiceNameAzureRM)
+              commandOptions: '-var-file="../fabric-infra-environments/development.tfvars"'
+          
+          # Step 5: Publish Terraform Plan Artifact (optional, to save plan output for later use)
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Terraform Plan Artifact'
+            inputs:
+              targetPath: '$(System.DefaultWorkingDirectory)'
+              artifactName: 'fabric-plan-artifact'
+
+  # Stage 2: Terraform Apply (Development Stage)
+  - stage: Terraform_Apply_Development
+    displayName: 'Terraform Apply - Development'
+    dependsOn: Terraform_Plan_Development
+    condition: succeeded('Terraform_Plan_Development')  
+    variables:
+      - group: 
+    jobs:
+      - job: Apply_Terraform_Dev
+        displayName: 'Terraform Apply - Development'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          # Step 1: Download the Terraform Plan Artifact from the previous stage (Plan Stage)
+          - download: current  # 'current' is referring to the artifact from the current pipeline run
+            artifact: fabric-plan-artifact  # Artifact name from the Terraform Plan stage
+            displayName: 'Download Terraform Plan Artifact'
+
+          # Step 2: Initialize Terraform (to ensure providers are downloaded and the lock file is generated)
+          - task: TerraformTaskV4@4
+            displayName: 'Initialize Terraform'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/fabric-infra/modules'
+              backendServiceArm: $(backendServiceConnection)
+              environmentServiceNameAzureRM: $(environmentServiceNameAzureRM)
+              backendAzureRmStorageAccountName: $(backendAzureRmStorageAccountName)
+              backendAzureRmContainerName: $(backendAzureRmContainerName)
+              backendAzureRmResourceGroupName: $(backendAzureRmResourceGroupName)
+              backendAzureRmKey: $(backendAzureRmKey)
+              
+          # Step 3: Run Terraform Apply (Deployment)
+          - task: TerraformTaskV4@4
+            displayName: 'Run Terraform Apply'
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/fabric-infra/modules'
+              environmentServiceNameAzureRM: $(environmentServiceNameAzureRM)
+              planFile: '$(Pipeline.Workspace)/fabric-plan-artifact/terraform.plan'  # Correct path to the plan file
+              commandOptions: '-var-file="../fabric-infra-environments/development.tfvars" -auto-approve'
+
+  
+
+ ### -----For Dev deletion, run stage 3 and 4 to enable the destroy plan and destroy apply stages -----
+
+  # Stage 3: Terraform Destroy Plan (Development Stage)
+  - stage: Terraform_Destroy_Plan_Development
+    displayName: 'Terraform Destroy Plan - Development'
+    dependsOn: []  # Ensure this stage runs independently, without dependency on previous stages.
+    variables:
+      - group: 'Fabric-Infra-Development Stage'
+    jobs:
+      - job: Destroy_Terraform_Dev
+        displayName: 'Terraform Destroy - Development'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+
+        steps:
+          # Step 1: Download the Terraform Configuration Files artifact from the CI pipeline (optional)
+          - download: earp-reporting-and-analytics-fabric-infra-build
+            artifact: fabric-artifacts  # Ensure this matches the artifact name from CI
+            displayName: 'Download Terraform Configuration Files'
+
+          # Step 2: Install Terraform (if not already installed)
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: $(terraformVersion)
+
+          # Step 3: Initialize Terraform (this ensures Terraform uses the right backend and provider)
+          - task: TerraformTaskV4@4
+            displayName: 'Initialize Terraform Backend'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/fabric-infra/modules'
+              backendServiceArm: $(backendServiceConnection)
+              environmentServiceNameAzureRM: $(environmentServiceNameAzureRM)
+              backendAzureRmStorageAccountName: $(backendAzureRmStorageAccountName)
+              backendAzureRmContainerName: $(backendAzureRmContainerName)
+              backendAzureRmResourceGroupName: $(backendAzureRmResourceGroupName)
+              backendAzureRmKey: $(backendAzureRmKey)
+              
+          # Step 4: Run Terraform Plan for Destruction (optional: can help to visualize what will be destroyed)
+          - task: TerraformTaskV4@4
+            displayName: 'Run Terraform Plan for Destruction'
+            inputs:
+              provider: 'azurerm'
+              command: 'plan'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/fabric-infra/modules'
+              environmentServiceNameAzureRM: $(environmentServiceNameAzureRM)
+              commandOptions: '-var-file="../fabric-infra-environments/development.tfvars" -destroy'
+
+  # Stage 4: Terraform Destroy Apply (Development Stage)
+  - stage: Terraform_Destroy_Apply_Development
+    displayName: 'Terraform Destroy Apply - Development'
+    dependsOn: Terraform_Destroy_Plan_Development
+    variables:
+      - group: 'Fabric-Infra-Development Stage'
+    jobs:
+      - job: Destroy_Terraform_Dev
+        displayName: 'Terraform Destroy - Development'
+        pool:
+          vmImage: 'ubuntu-latest'
+
+
+        steps:
+          # Step 1: Download the Terraform Configuration Files artifact from the CI pipeline (optional)
+          - download: earp-reporting-and-analytics-fabric-infra-build
+            artifact: fabric-config  # Ensure this matches the artifact name from CI
+            displayName: 'Download Terraform Configuration Files'
+
+          # Step 2: Install Terraform (if not already installed)
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: $(terraformVersion)
+
+          # Step 3: Initialize Terraform (this ensures Terraform uses the right backend and provider)
+          - task: TerraformTaskV4@4
+            displayName: 'Initialize Terraform Backend'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/fabric-infra/modules'
+              backendServiceArm: $(backendServiceConnection)
+              environmentServiceNameAzureRM: $(environmentServiceNameAzureRM)
+              backendAzureRmStorageAccountName: $(backendAzureRmStorageAccountName)
+              backendAzureRmContainerName: $(backendAzureRmContainerName)
+              backendAzureRmResourceGroupName: $(backendAzureRmResourceGroupName)
+              backendAzureRmKey: $(backendAzureRmKey) 
+              
+          # Step 4: Run Terraform Destroy (To remove the deployed infrastructure)
+          - task: TerraformTaskV4@4
+            displayName: 'Run Terraform Destroy'
+            inputs:
+              provider: 'azurerm'
+              command: 'destroy'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/fabric-infra/modules'
+              environmentServiceNameAzureRM: $(environmentServiceNameAzureRM)
+              commandOptions: '-var-file="../fabric-infra-environments/development.tfvars" -auto-approve'
+              
+
+
+
+
+
+              
+  ############################ Fabric Test Stage Configuration #####################################
+
+### Clone the same code as dev and update the required values 

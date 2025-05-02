@@ -1,0 +1,30 @@
+#trigger: none
+trigger: 
+  branches:
+    include:
+      - main    # To trigger on the 'main' branch
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+# Install Terraform 
+- task: TerraformInstaller@1
+  displayName: 'Install Terraform'
+  inputs:
+    terraformVersion: '1.10.2'  
+
+# Security Code Analysis using Microsoft Security DevOps extension
+- task: MicrosoftSecurityDevOps@1  # Microsoft Security DevOps task for code analysis
+  displayName: 'Run Security Code Analysis'
+  inputs:
+    workingDirectory: '$(System.DefaultWorkingDirectory)'  # Root directory to scan
+    failBuildOnError: true   # Fail the build if any security issues are found
+    severityThreshold: 'high'  # Optional: You can choose 'high', 'medium', or 'low' severity
+
+# Publish Terraform configuration files and other necessary files as artifacts
+- publish: $(System.DefaultWorkingDirectory)  
+  artifact: fabric-artifact  # Artifact name that will be used in CD pipeline
+  displayName: 'Publish Terraform Configuration Files'
+
+  ##
