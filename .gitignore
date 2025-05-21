@@ -1,0 +1,18 @@
+# Local .terraform directories
+**/.terraform/*
+**/.external_modules/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Ignore lock files
+*.lock.hcl
+*.lock.info
+
+# Ignore transient lock info files created by terraform apply
+.terraform.tfstate.lock.info
+
+# Crash log files
+crash.log
+crash.*.log

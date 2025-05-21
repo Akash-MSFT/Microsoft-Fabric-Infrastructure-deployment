@@ -8,7 +8,7 @@ fabric_workspaces = {
     description  = "Dev workspace"
     roles = [
       {
-        principal_id   =  ""  #security groups object id
+        principal_id   = "" #security groups object id
         principal_type = "Group"
         role           = "Contributor"
       },
@@ -46,7 +46,7 @@ fabric_workspaces = {
     description  = ""
     roles = [
       {
-        principal_id   =  """"
+        principal_id   = ""
         principal_type = "Group"
         role           = "Contributor"
       },
@@ -76,7 +76,7 @@ fabric_workspaces = {
     description  = ""
     roles = [
       {
-        principal_id   =  """"
+        principal_id   = ""
         principal_type = "Group"
         role           = "Contributor"
       },
@@ -88,6 +88,7 @@ fabric_workspaces = {
 
       {
         principal_id   = ""
+        principal_type = "Group"
         role           = "Viewer"
       }
     ]
@@ -104,7 +105,7 @@ fabric_workspaces = {
     description  = ""
     roles = [
       {
-        principal_id   =  ""
+        principal_id   = ""
         principal_type = "Group"
         role           = "Contributor"
       },
@@ -134,7 +135,7 @@ fabric_workspaces = {
     description  = ""
     roles = [
       {
-        principal_id   =  ""
+        principal_id   = ""
         principal_type = "Group"
         role           = "Contributor"
       },
@@ -175,3 +176,4 @@ max_node_count                      = 9
 dynamic_executor_allocation_enabled = true
 min_executors                       = 1
 max_executors                       = 5
+capacity_name                       = ""

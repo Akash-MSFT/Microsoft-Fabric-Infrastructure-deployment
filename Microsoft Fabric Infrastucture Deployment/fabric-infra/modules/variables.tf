@@ -69,3 +69,8 @@ variable "max_executors" {
   type        = number
 }
 
+variable "capacity_name" {
+  description = "Name of the Fabric capacity"
+  type        = string
+}
+
