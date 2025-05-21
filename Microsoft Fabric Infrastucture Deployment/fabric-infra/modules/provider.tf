@@ -10,12 +10,13 @@ terraform {
       version = "1.1.0"
     }
   }
-  # backend "azurerm" { ###### Configure the below values in the devops variable group to generate state file in Azure Storage Account
-  #   resource_group_name  = "$(backendAzureRmResourceGroupName)"
-  #   storage_account_name = "$(backendAzureRmStorageAccountName)"
-  #   container_name       = "$(backendAzureRmContainerName)"
-  #   key                  = "$(backendAzureRmKey)"
-  # }
+  
+  backend "azurerm" { ###### Configure the below values in the devops variable group to generate state file in Azure Storage Account
+    resource_group_name  = "$(backendAzureRmResourceGroupName)"
+    storage_account_name = "$(backendAzureRmStorageAccountName)"
+    container_name       = "$(backendAzureRmContainerName)"
+    key                  = "$(backendAzureRmKey)"
+  }
 }
 
 #Configure the Microsoft Fabric Terraform Provider
