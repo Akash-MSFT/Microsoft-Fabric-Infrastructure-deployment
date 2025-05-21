@@ -2,7 +2,9 @@
 
 
 resource "fabric_spark_custom_pool" "spark_pool" {
-  workspace_id = "" ##Workspace ID 
+  for_each = fabric_workspace.fabric_workspace
+
+  workspace_id = each.value.id 
   name         = var.spark_pool_name
   node_family  = var.node_family
   node_size    = var.node_size

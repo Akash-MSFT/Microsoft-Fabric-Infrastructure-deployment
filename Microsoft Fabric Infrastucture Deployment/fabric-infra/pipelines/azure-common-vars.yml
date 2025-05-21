@@ -1,14 +1,14 @@
 variables:
-  
+
   # Terraform Configuration Variables
   - name: terraformVersion
-    value: '1.10.2'
+    value: '1.12.0'
 
   # Backend Configuration
   - name: backendServiceConnection
     value: '' # Azure Service Connection
 
-  - name: environmentServiceNameAzureRM      # Azure Service Connection
+  - name: environmentServiceNameAzureRM # Azure Service Connection
     value: ''
 
   - name: environmentGroupDevelopment
@@ -16,7 +16,7 @@ variables:
 
   - name: environmentGroupTest
     value: ''
-  
+
   - name: variableGroupDevelopment
     value: ''
 

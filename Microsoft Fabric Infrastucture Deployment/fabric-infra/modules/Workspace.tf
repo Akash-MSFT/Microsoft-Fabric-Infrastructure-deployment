@@ -1,6 +1,6 @@
 # Workspace with Capacity and Identity
 data "fabric_capacity" "fabric_capacity" {
-  display_name = ""
+  display_name = var.capacity_name
 }
 
 
